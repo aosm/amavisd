@@ -1,36 +1,36 @@
---- amavisd.ori	2009-06-25 14:36:06.000000000 +0200
-+++ amavisd	2009-06-25 14:37:27.000000000 +0200
+--- amavisd.ori	2011-05-13 19:22:29.277598284 +0200
++++ amavisd	2011-05-13 19:24:45.229961373 +0200
 @@ -99,4 +99,5 @@
  #  Amavis::In::SMTP
  #( Amavis::In::Courier )
 +#  Amavis::In::QMQPqq
  #  Amavis::Out::SMTP::Protocol
  #  Amavis::Out::SMTP::Session
-@@ -3509,4 +3510,5 @@
+@@ -3513,4 +3514,5 @@
      $myproduct_name,
      $conn->socket_port eq '' ? 'unix socket' : "port ".$conn->socket_port);
 +  # must not use proto name QMQPqq in 'with'
    $s .= "\n with $smtp_proto"  if $smtp_proto=~/^(ES|S|L)MTPS?A?\z/i; # rfc3848
    $s .= "\n id $id"  if $id ne '';
-@@ -8516,4 +8518,5 @@
+@@ -8547,4 +8549,5 @@
    $extra_code_sql_lookup $extra_code_ldap
    $extra_code_in_amcl $extra_code_in_smtp $extra_code_in_courier
 +  $extra_code_in_qmqpqq
    $extra_code_out_smtp $extra_code_out_pipe
    $extra_code_out_bsmtp $extra_code_out_local $extra_code_p0f
-@@ -8544,4 +8547,5 @@
+@@ -8575,4 +8578,5 @@
  # Amavis::In::AMCL, Amavis::In::SMTP and In::Courier objects
  use vars qw($amcl_in_obj $smtp_in_obj $courier_in_obj);
 +use vars qw($qmqpqq_in_obj);            # Amavis::In::QMQPqq object
  
  use vars qw($sql_dataset_conn_lookups); # Amavis::Out::SQL::Connection object
-@@ -9172,4 +9176,5 @@
+@@ -9203,4 +9207,5 @@
    do_log(0,"SMTP-in proto code  %s loaded", $extra_code_in_smtp    ?'':" NOT");
    do_log(0,"Courier proto code  %s loaded", $extra_code_in_courier ?'':" NOT");
 +  do_log(0,"QMQPqq-in proto code %s loaded", $extra_code_in_qmqpqq ?'':" NOT");
    do_log(0,"SMTP-out proto code %s loaded", $extra_code_out_smtp   ?'':" NOT");
    do_log(0,"Pipe-out proto code %s loaded", $extra_code_out_pipe   ?'':" NOT");
-@@ -9676,5 +9681,9 @@
+@@ -9708,5 +9713,9 @@
        die "unavailable support for protocol: $suggested_protocol";
      } elsif ($suggested_protocol eq 'QMQPqq') {
 -      die "unavailable support for protocol: $suggested_protocol";
@@ -41,25 +41,25 @@
 +      $qmqpqq_in_obj->process_qmqpqq_request($sock,$conn,\&check_mail);
      } elsif ($suggested_protocol eq 'TCP-LOOKUP') { #postfix maps, experimental
        process_tcp_lookup_request($sock, $conn);
-@@ -9769,4 +9778,5 @@
+@@ -9801,4 +9810,5 @@
    do_log(5,"child_finish_hook: invoking DESTROY methods");
    undef $smtp_in_obj; undef $amcl_in_obj; undef $courier_in_obj;
 +  undef $qmqpqq_in_obj;
    undef $sql_storage; undef $sql_wblist; undef $sql_policy; undef $ldap_policy;
    undef $sql_dataset_conn_lookups; undef $sql_dataset_conn_storage;
-@@ -9779,4 +9789,5 @@
+@@ -9811,4 +9821,5 @@
  # do_log(5,"at the END handler: invoking DESTROY methods");
    undef $smtp_in_obj; undef $amcl_in_obj; undef $courier_in_obj;
 +  undef $qmqpqq_in_obj;
    undef $sql_storage; undef $sql_wblist; undef $sql_policy; undef $ldap_policy;
    undef $sql_dataset_conn_lookups; undef $sql_dataset_conn_storage;
-@@ -13447,4 +13458,5 @@
+@@ -13512,4 +13523,5 @@
      $extra_code_sql_lookup, $extra_code_ldap,
      $extra_code_in_amcl, $extra_code_in_smtp, $extra_code_in_courier,
 +    $extra_code_in_qmqpqq,
      $extra_code_out_smtp, $extra_code_out_pipe,
      $extra_code_out_bsmtp, $extra_code_out_local, $extra_code_p0f,
-@@ -13741,5 +13753,10 @@
+@@ -13806,5 +13818,10 @@
      undef $extra_code_in_courier;
    }
 -  if ($needed_protocols_in{'QMQPqq'})  { die "In::QMQPqq code not available" }
@@ -71,7 +71,7 @@
 +  }
  }
  
-@@ -17047,4 +17064,276 @@
+@@ -17138,4 +17155,276 @@
  __DATA__
  #
 +package Amavis::In::QMQPqq;
@@ -348,8 +348,8 @@
 +#
  package Amavis::Out::SMTP::Protocol;
  use strict;
---- amavisd.conf.ori	2009-06-25 14:35:47.000000000 +0200
-+++ amavisd.conf	2009-06-25 14:37:27.000000000 +0200
+--- amavisd.conf.ori	2011-05-13 19:22:13.915788826 +0200
++++ amavisd.conf	2011-05-13 19:24:45.229961373 +0200
 @@ -59,6 +59,6 @@
                 # option(s) -p overrides $inet_socket_port and $unix_socketname
  
@@ -359,8 +359,8 @@
 +$inet_socket_port = 10628;   # accept connections on this local TCP port(s)
  
  $policy_bank{'MYNETS'} = {   # mail originating from @mynetworks
---- amavisd.conf-sample.ori	2009-06-25 14:35:59.000000000 +0200
-+++ amavisd.conf-sample	2009-06-25 14:37:27.000000000 +0200
+--- amavisd.conf-sample.ori	2011-05-13 19:22:25.123703387 +0200
++++ amavisd.conf-sample	2011-05-13 19:24:45.229961373 +0200
 @@ -231,8 +231,11 @@
  # SMTP SERVER (INPUT) PROTOCOL SETTINGS (e.g. with Postfix, Exim v4, ...)
  #   (used when MTA is configured to pass mail to amavisd via SMTP or LMTP)

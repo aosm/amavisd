@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>OpenSourceImportDate</key>
-	<string>2007-12-12</string>
+	<string>2011-05-05</string>
 	<key>OpenSourceLicense</key>
 	<string>GNU General Public License, Version 2, June 1991</string>
 	<key>OpenSourceLicenseFile</key>
@@ -13,13 +13,13 @@
 		<string>Modified daemon to work with launchd</string>
 	</array>
 	<key>OpenSourceProject</key>
-	<string>amavisd-new</string>
+	<string>amavisd</string>
 	<key>OpenSourceSHA1</key>
 	<string></string>
 	<key>OpenSourceURL</key>
-	<string>http://www.ijs.si/software/amavisd/amavisd-new-2.6.4.tar.gz</string>
+	<string>http://www.ijs.si/software/amavisd/amavisd-new-2.6.5.tar.gz</string>
 	<key>OpenSourceVersion</key>
-	<string>amavisd-new-2.6.4</string>
+	<string>amavisd-new-2.6.5</string>
 	<key>OpenSourceWebsiteURL</key>
 	<string>http://www.ijs.si/software/amavisd/</string>
 </dict>

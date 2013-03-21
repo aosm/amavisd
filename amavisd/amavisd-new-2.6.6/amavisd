@@ -10,7 +10,7 @@
 # on amavisd-snapshot-20020300).
 #
 # All work since amavisd-snapshot-20020300:
-#   Copyright (C) 2002-2009 Mark Martinec,
+#   Copyright (C) 2002-2011 Mark Martinec,
 #   All Rights Reserved.
 # with contributions from the amavis-user mailing list and individuals,
 # as acknowledged in the release notes.
@@ -273,7 +273,7 @@ sub CC_VIRUS ()    { 9 }
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   %EXPORT_TAGS = (
     'dynamic_confvars' =>  # per- policy bank settings
@@ -597,7 +597,7 @@ sub dkim_key($$$;@) {
 use vars qw($read_config_files_depth @actual_config_files);
 BEGIN {  # init_primary: version, $unicode_aware, base policy bank
   $myproduct_name = 'amavisd-new';
-  $myversion_id = '2.6.4'; $myversion_date = '20090625';
+  $myversion_id = '2.6.6'; $myversion_date = '20110518';
 
   $myversion = "$myproduct_name-$myversion_id ($myversion_date)";
   $myversion_id_numeric =  # x.yyyzzz, allows numerical compare, like Perl $]
@@ -1303,7 +1303,7 @@ BEGIN {
     [qr/^LHa.*\barchive\b/i             => 'lha'],  # (also known as .lzh)
     [qr/^ARC archive\b/i                => 'arc'],
     [qr/^ARJ archive\b/i                => 'arj'],
-    [qr/^Zoo archive\b/i                => ['zoo','unzoo'] ],
+    [qr/^Zoo archive\b/i                => 'zoo'],
     [qr/^(\S+\s+)?tar archive\b/i       => 'tar'],
     [qr/^(\S+\s+)?cpio archive\b/i      => 'cpio'],
     [qr/^StuffIt Archive\b/i            => 'sit'],
@@ -1492,6 +1492,7 @@ BEGIN {
     CC_BANNED,      sub { c('final_banned_destiny') },
     CC_SPAM,        sub { c('final_spam_destiny') },
     CC_BADH,        sub { c('final_bad_header_destiny') },
+    CC_MTA.',2',    D_REJECT,
     CC_OVERSIZED,   D_BOUNCE,
     CC_CATCHALL,    D_PASS,
   );
@@ -1709,8 +1710,8 @@ use vars qw(%defang_by_ccat);
 
 @virus_name_to_spam_score_maps =
   (new_RE(  # the order matters!
-    [ qr'^Phishing\.'                                             => 0.1 ],
     [ qr'^Structured\.(SSN|CreditCardNumber)\b'                   => 0.1 ],
+    [ qr'^(Heuristics\.)?Phishing\.'                              => 0.1 ],
     [ qr'^(Email|HTML)\.Phishing\.(?!.*Sanesecurity)'             => 0.1 ],
     [ qr'^Sanesecurity\.(Malware|Rogue|Trojan)\.' => undef ],# keep as infected
     [ qr'^Sanesecurity\.'                                         => 0.1 ],
@@ -1725,6 +1726,9 @@ use vars qw(%defang_by_ccat);
     [ qr'^Safebrowsing\.'                                         => 0.1 ],
     [ qr'^winnow\.(phish|spam)\.'                                 => 0.1 ],
     [ qr'^INetMsg\.SpamDomain'                                    => 0.1 ],
+    [ qr'^Doppelstern\.(Scam4|Phishing)'                          => 0.1 ],
+    [ qr'^ScamNailer\.'                                           => 0.1 ],
+    [ qr'^HTML/Bankish'                                     => 0.1 ],  # F-Prot
     [ qr'-SecuriteInfo\.com(\.|\z)'         => undef ],  # keep as infected
     [ qr'^MBL_NA\.UNOFFICIAL'               => 0.1 ],    # false positives
     [ qr'^MBL_'                             => undef ],  # keep as infected
@@ -1891,7 +1895,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&init &collect_log_stats &log_to_stderr &log_fd
                   &write_log &open_log &close_log);
@@ -1958,8 +1962,8 @@ sub open_log() {
     my($syslog_facility_num) = eval("LOG_\U$fac");
     $syslog_facility_num =~ /^\d+\z/
       or die "Unknown syslog facility name: $fac";
-    openlog($id, LOG_PID | LOG_NDELAY, $syslog_facility_num);
     $current_syslog_ident = $id; $current_syslog_facility = $fac;
+    openlog($current_syslog_ident, LOG_PID | LOG_NDELAY, $syslog_facility_num);
   } elsif ($logfile ne '') {
     $loghandle = IO::File->new;
     $loghandle->open($logfile, O_CREAT|O_APPEND|O_WRONLY, 0640)
@@ -2070,7 +2074,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&init &section_time &report &get_time_so_far);
 }
@@ -2154,7 +2158,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&untaint &min &max &unique_list &unique_ref
                   &safe_encode &safe_decode &q_encode
@@ -2849,7 +2853,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&exit_status_str &proc_status_ok &kill_proc &cloexec
                   &run_command &run_command_consumer &run_as_subprocess
@@ -3363,7 +3367,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT = qw(
     &rfc2822_timestamp &iso8601_timestamp &iso8601_utc_timestamp &iso8601_week
@@ -4255,7 +4259,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log fmt_struct);
 }
@@ -4374,7 +4378,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&lookup_ip_acl);
   import Amavis::Util qw(ll do_log);
@@ -4649,7 +4653,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&lookup &lookup2 &lookup_hash &lookup_acl);
   import Amavis::Util qw(ll do_log fmt_struct);
@@ -4913,7 +4917,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&expand &tokenize);
   import Amavis::Util qw(ll do_log);
@@ -5204,7 +5208,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars);
   import Amavis::Timing qw(section_time);
@@ -5439,12 +5443,19 @@ sub check {
       if ($errn) {
         die "Inaccessible $dir/$f: $!";
       } elsif (-f _) {
-        if ($f ne 'email.txt') { die "Unexpected file $dir/$f" }
+        warn "Unexpected file $dir/$f"  if $f ne 'email.txt';
+      } elsif (-l _) {
+        die "Unexpected link $dir/$f";
       } elsif (-d _) {
+        my($nlink) = $stat_list[3];
         if ($f ne 'parts') {
           die "Unexpected directory $dir/$f";
-        } elsif ($stat_list[3] > 2) {  # number of hard links
-          die "Directory $dir/$f has subdirectories: ".($stat_list[3]-2);
+        } elsif ($nlink > 2) {  # number of hard links
+          # when a directory's link count is > 2, it has "n-2" sub-directories;
+          # this does not apply to file systems like AFS, FAT, ISO-9660,
+          # but it also seems it does not apply to Mac OS 10 (Leopard)
+          do_log(5, "TempDir::check: directory %s has %d subdirectories",
+                    $dir, $nlink-2);
         }
       } else {
         die "Unexpected non-regular file $dir/$f";
@@ -5683,7 +5694,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
 }
 use Errno qw(EIO);
@@ -5813,7 +5824,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
 }
 
@@ -5844,7 +5855,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform);
   import Amavis::Util qw(setting_by_given_contents_category_all
@@ -6017,7 +6028,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform);
   import Amavis::rfc2821_2822_Tools qw(rfc2822_timestamp quote_rfc2821_local
@@ -6315,7 +6326,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&hdr);
   import Amavis::Conf qw(:platform c cr ca);
@@ -6575,7 +6586,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT = qw(&mail_dispatch);
   import Amavis::Conf qw(:platform :confvars c cr ca $relayhost_is_client);
@@ -6649,7 +6660,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&parse_ip_address_from_received &best_try_originator
                   &first_received_from);
@@ -6753,7 +6764,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&consumed_bytes);
   import Amavis::Conf qw(c cr ca
@@ -6839,7 +6850,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log);
 }
@@ -6925,7 +6936,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter MIME::Parser::Filer);  # subclass of MIME::Parser::Filer
 }
 # This package will be used by mime_decode().
@@ -6966,10 +6977,10 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&check_header_validity &check_for_banned_names);
-  import Amavis::Util qw(ll do_log min max sanitize_str);
+  import Amavis::Util qw(ll do_log min max untaint sanitize_str);
   import Amavis::Conf qw(:platform %banned_rules c cr ca);
   import Amavis::Lookup qw(lookup lookup2);
 }
@@ -6994,29 +7005,31 @@ sub check_header_validity($$) {
         $pre = ''; $mid = ''; $post = $curr_head;
         $minor_badh_category = max(6, $minor_badh_category);
       }
-    } elsif ($t{'empty'} && $curr_head =~ /^(.*?)^([ \t]+)(?=\n|\z)/gms) {
+    } elsif ($t{'empty'} && $curr_head =~ /^([ \t]+)(?=\n|\z)/gms) {
       $msg1 ="Improper folded header field made up entirely of whitespace";
-      $pre = $1; $mid = $2; $post = substr($curr_head,pos($curr_head));
+      $mid = $1;
       # note: using //g and pos to avoid deep recursion in regexp
       $minor_badh_category = max(4, $minor_badh_category);
     } elsif ($t{'long'} &&
-             $curr_head =~ /^(.*?)^([^\n]{999,})(?=\n|\z)/gms) {
+             $curr_head =~ /^([^\n]{999,})(?=\n|\z)/gms) {
       $msg1 = "Header line longer than 998 characters";
-      $pre = $1; $mid = $2; $post = substr($curr_head,pos($curr_head));
+      $mid = $1;
       $minor_badh_category = max(5, $minor_badh_category);
-    } elsif ($t{'control'} && $curr_head =~ /^(.*?)([\000\015])/gs) {
+    } elsif ($t{'control'} && $curr_head =~ /([\000\015])/gs) {
       $msg1 = "Improper use of control character";
-      $pre = $1; $mid = $2; $post = substr($curr_head,pos($curr_head));
+      $mid = $1;
       $minor_badh_category = max(3, $minor_badh_category);
-    } elsif ($t{'8bit'} && $curr_head =~ /^(.*?)([\200-\377])/gs) {
+    } elsif ($t{'8bit'} && $curr_head =~ /([\200-\377])/gs) {
       $msg1 = "Non-encoded 8-bit data";
-      $pre = $1; $mid = $2; $post = substr($curr_head,pos($curr_head));
+      $mid = $1;
       $minor_badh_category = max(2, $minor_badh_category);
-    } elsif ($t{'8bit'} && $curr_head =~ /^(.*?)([^\000-\377])/gs) {
+    } elsif ($t{'8bit'} && $curr_head =~ /([^\000-\377])/gs) {
       $msg1 = "Non-encoded Unicode character";  # should not happen
-      $pre = $1; $mid = $2; $post = substr($curr_head,pos($curr_head));
+      $mid = $1;
       $minor_badh_category = max(2, $minor_badh_category);
     }
+    $pre = substr($curr_head,0,pos($curr_head)-length($mid))  if !defined $pre;
+    $post = substr($curr_head,pos($curr_head))  if !defined $post;
     if (defined $msg1) {
       chomp($post);
       if (length($mid)  > 20) { $mid  = substr($mid, 0,15) .  "..."  }
@@ -7192,7 +7205,13 @@ sub check_for_banned_names($) {
       }
       if (ref $bnpre && grep {!$_->{result}} @recip_tables) {  # any non-true?
         # try new style: banned_namepath_re; it is global, not per-recipient
-        my($result,$matchingkey) = lookup2(0, join("\n",@descr), [$bnpre],
+        my $descr_str = join("\n",@descr);
+        if ($] < 5.012003) {
+          # avoid a [perl #62048] bug in lookup_re():
+          #   Unwarranted "Malformed UTF-8 character" on tainted variable
+          $descr_str = untaint($descr_str);
+        }
+        my($result,$matchingkey) = lookup2(0, $descr_str, [$bnpre],
                                            Label=>'banned_namepath_re');
         if (defined $result) {
           for my $e (@recip_tables) {
@@ -7252,12 +7271,13 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&mime_decode);
   import Amavis::Conf qw(:platform c cr ca $MAXFILES);
   import Amavis::Timing qw(section_time);
-  import Amavis::Util qw(snmp_count untaint ll do_log);
+  import Amavis::Util qw(snmp_count untaint ll do_log
+                         safe_decode safe_encode);
   import Amavis::Unpackers::NewFilename qw(consumed_bytes);
 }
 use subs @EXPORT_OK;
@@ -7354,22 +7374,33 @@ sub mime_traverse($$$$$) {
     $part->attributes_add('U','C')  if $mt =~ m{/encrypted}i ||
                                        $et =~ m{/encrypted}i;
     my(@rn);  # recommended file names, both raw and RFC 2047 decoded
-    my($val, $val_decoded);
-    $val = $head->mime_attr('content-disposition.filename');
-    if ($val ne '') {
-      push(@rn, $val);
-      $val_decoded = MIME::Words::decode_mimewords($val);
-      push(@rn, $val_decoded)  if $val_decoded ne $val;
-    }
-    $val = $head->mime_attr('content-type.name');
-    if (defined($val) && $val ne '') {
-      $val_decoded = MIME::Words::decode_mimewords($val);
-      push(@rn, $val_decoded)  if !grep { $_ eq $val_decoded } @rn;
-      push(@rn, $val)          if !grep { $_ eq $val         } @rn;
+    my %rn_seen;
+    for my $attr_name ('content-disposition.filename', 'content-type.name') {
+      my $val_raw = $head->mime_attr($attr_name);
+      next  if !defined $val_raw || $val_raw eq '';
+      my $val_dec = '';  # decoded, represented as native Perl characters
+      eval {
+        my(@chunks) = MIME::Words::decode_mimewords($val_raw);
+        for my $pair (@chunks) {
+          my($data,$encoding) = @$pair;
+          $encoding = 'ISO-8859-1'  if !defined $encoding || $encoding eq '';
+          $encoding =~ s/\*[^*]*\z//;  # strip RFC 2231 language suffix
+          $val_dec .= safe_decode($encoding,$data);
+        }
+      };
+      if ($val_dec ne '' && !$rn_seen{$val_dec}) {
+        push(@rn,$val_dec); $rn_seen{$val_dec} = 1;
+      }
+      if (!$rn_seen{$val_raw}) {
+        push(@rn,$val_raw); $rn_seen{$val_raw} = 1;
+      }
     }
     $part->name_declared(@rn==1 ? $rn[0] : \@rn)  if @rn;
-    $val = $head->mime_attr('content-type.report-type');
-    $part->report_type($val)  if $val ne '';
+    my $val = $head->mime_attr('content-type.report-type');
+    if (defined $val && $val ne '') {
+      # $val = safe_encode('UTF-8',$val)  if Encode::is_utf8($val);
+      $part->report_type($val);
+    }
   }
   mime_decode_pre_epi('epilogue', $entity->epilogue,
                       $tempdir, $parent_obj, $placement);
@@ -7439,7 +7470,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter MIME::Body);  # subclass of MIME::Body
   import Amavis::Util qw(ll do_log);
 }
@@ -7503,7 +7534,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&delivery_status_notification &delivery_short_report
                   &build_mime_entity &defanged_mime_entity
@@ -8414,7 +8445,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.2071';
+  $VERSION = '2.2091';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log freeze thaw);
 }
@@ -8467,7 +8498,7 @@ use re 'taint';
 
 BEGIN {
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   import Amavis::Conf qw(:platform :sa :confvars c cr ca);
   import Amavis::Util qw(untaint min max unique_list unique_ref
                          ll do_log sanitize_str debug_oneshot
@@ -9211,13 +9242,14 @@ sub load_policy_bank($) {
     my($new_bank_ref) = $policy_bank{$policy_bank_name};
     my($do_log5) = ll(5);
     for my $k (keys %$new_bank_ref) {
-      do_log(-1,'loading policy bank "%s": unknown field "%s"',
-                $policy_bank_name,$k)  if !exists $current_policy_bank{$k};
-      if (ref($new_bank_ref->{$k}) ne 'HASH' ||
+      if (!exists $current_policy_bank{$k}) {
+        do_log(-1,'loading policy bank "%s": unknown field "%s"',
+                  $policy_bank_name,$k);
+      } elsif (ref($new_bank_ref->{$k}) ne 'HASH' ||
           ref($current_policy_bank{$k}) ne 'HASH') {
         $current_policy_bank{$k} = $new_bank_ref->{$k};
       } else {  # new hash to be merged into an existing hash
-        if ($new_bank_ref->{REPLACE}) {  # replace the entire hash
+        if ($new_bank_ref->{$k}{REPLACE}) {  # replace the entire hash
           $current_policy_bank{$k} = { %{$new_bank_ref->{$k}} };  # copy of new
           do_log(5,"loading policy bank %s, curr{%s} hash replaced",
                     $policy_bank_name, $k)  if $do_log5;
@@ -10714,11 +10746,17 @@ sub check_mail($$$) {
     if (!$bounce_header_fields_ref) {
       # not a bounce
     } elsif ($msginfo->originating) {
-      # rescued by originating
-    } elsif (defined($bounce_msgid) && $bounce_msgid =~ /(\@[^\@>]+)>?\z/ &&
+      # will be rescued from bounce killing by the originating flag
+    } elsif (defined($bounce_msgid) &&
+             $bounce_msgid =~ /(\@[^\@>() \t][^\@>]*?)[ \t]*>?\z/ &&
              lookup2(0,$1, ca('local_domains_maps'))) {
-      # rescued by a local domain in referenced Message-ID
+      # will be rescued from bounce killing by a local domain
+      # in referenced Message-ID
+    } elsif (!defined($sql_storage) ||
+             c('penpals_bonus_score') <= 0 || c('penpals_halflife') <= 0) {
+      # will be rescued from bounce killing by pen pals disabled
     } elsif (c('bounce_killer_score') > 20) {
+      # is a bounce and is eligible to bounce killing, no need for spam scan
       $bypass_spam_checks_by_bounce_killer = 1;
     }
 
@@ -11314,6 +11352,32 @@ sub check_mail($$$) {
         $msginfo->add_contents_category(CC_MTA,$min_ccat);
         my($blocking_ccat) = sprintf("%d,%d", CC_MTA,$min_ccat);
         $r->blocking_ccat($blocking_ccat) if !defined($r->blocking_ccat);
+        my($final_destiny) =
+          $r->setting_by_contents_category(cr('final_destiny_by_ccat'));
+        if ($final_destiny == D_PASS) {
+          $final_destiny = D_REJECT;  # impossible to pass, change to reject
+        }
+        local($1,$2);
+        $r->recip_destiny($final_destiny);
+        if ($final_destiny == D_DISCARD && $smtp_resp =~ /^5/) {
+          $smtp_resp =~ s{^5(\d\d) 5(\.\d\.\d)}{250 2$2};  # 5xx -> 250
+        }
+        my($smtp_reason) =  # get the custom smtp response reason text
+          $r->setting_by_contents_category(cr('smtp_reason_by_ccat'));
+        $smtp_reason = ''  if !defined $smtp_reason;
+        if ($smtp_reason ne '') {
+          my(%mybuiltins) = %builtins;  # make a local copy
+          $smtp_reason = expand(\$smtp_reason, \%mybuiltins);
+          $smtp_reason = !ref($smtp_reason) ? '' : $$smtp_reason;
+          chomp($smtp_reason); $smtp_reason = sanitize_str($smtp_reason,1);
+          $smtp_reason = substr($smtp_reason,0,100) . "..."
+            if length($smtp_reason) > 100+3;
+        }
+        $smtp_resp =~ /^(\d\d\d(?: \d\.\d\.\d)?)\s*(.*)\z/;
+        my($dis) = $final_destiny == D_DISCARD ? ' Discarded' : '';
+        $r->recip_smtp_response("$1$dis $smtp_reason, $2");
+        $r->recip_done(1); # fake a delivery (confirm delivery to a bit bucket)
+        # note that 5xx status rejects may later be converted to bounces
         $msginfo->blocking_ccat($blocking_ccat)
                                           if !defined($msginfo->blocking_ccat);
       }
@@ -11722,14 +11786,25 @@ sub inspect_a_bounce_message($) {
           $t[2] eq 'message/feedback-report' ) && #shafranovich-feedback-report
           $t[2] eq 'message/'.lc($parts[0]->report_type) &&
         ( $t[3] eq 'text/rfc822-headers' || $t[3] eq 'message/rfc822' ||
-          $t[3] eq 'message/rfc822-headers' )  # nonstandard
+          $t[3] eq 'message/rfc822-headers' ||     # nonstandard
+          $t[3] eq 'message/partial' )             # nonstandard
        )
     { # standard DSN or MDN or feedback-report
       $bounce_type = $t[2] eq 'message/disposition-notification'        ? 'MDN'
                    : $t[2] eq 'message/global-disposition-notification' ? 'MDN'
                    : $t[2] eq 'message/feedback-report' ? 'ARF' : 'DSN';
       $structure_type = 'standard ' . $bounce_type;
-      $fname_ind = 3; $is_true_bounce = 1;
+      $fname_ind = $#parts; $is_true_bounce = 1;
+
+    } elsif ( @parts == 5 &&
+          $t[0]  eq 'multipart/report' &&
+          $t[-2] eq 'message/delivery-status' &&
+          $t[-2] eq 'message/'.lc($parts[0]->report_type) &&
+        ( $t[-1] eq 'text/rfc822-headers' || $t[-1] eq 'message/rfc822' )
+       ) {  # almost standard DSN, has two leading plain text parts
+      $bounce_type = 'DSN';  # BorderWare Security Platform
+      $structure_type = 'standard ' . $bounce_type;
+      $fname_ind = $#parts; $is_true_bounce = 1;
     } elsif (  @parts >= 2 && @parts <= 4  &&
           $t[0] eq 'multipart/report' &&
           $t[2] eq 'message/delivery-status' &&
@@ -11749,41 +11824,31 @@ sub inspect_a_bounce_message($) {
           $t[0] eq 'multipart/mixed' &&
         ( $t[-1] eq 'text/rfc822-headers' || $t[-1] eq 'message/rfc822' ||
           $t[-1] eq 'message/rfc822-headers') &&  # nonstandard - Gordano M.S.
-        ( $msginfo->is_auto || $msginfo->is_mlist ||
+        ( $rfc2822_from[0] =~ /^MAILER-DAEMON(?:\@|\z)/si ||
           $msginfo->get_header_field_body('subject') =~
-                                          /\bDelivery Failure Notification\b/
-      #   || $sender          =~ /^postmaster(?:\@|\z)/si
-      #   || $rfc2822_from[0] =~ /^postmaster(?:\@|\z)/si
+                        /\b(?:Delivery Failure Notification|failure notice)\b/
         ) ) {
       # qmail, msn?, mailman, C/R
       $fname_ind = -1;
       $structure_type = 'multipart/mixed(' . $msginfo->is_bulk . ')';
-    } elsif (@parts == 3 &&
-          $t[0] eq 'multipart/mixed' &&
-          $t[-1] eq 'application/octet-stream' &&
-          $parts[-1]->name_declared =~ /\.eml\z/) {
-      # MDaemon
+    } elsif ( $msginfo->is_auto && $sender eq '' &&
+                                # notify@yahoogroups.com notify@yahoogroupes.fr
+              $rfc2822_from[0] =~ /^notify\@yahoo/si &&
+              @parts >= 3 && @parts <= 5 &&
+              $t[0] eq 'multipart/mixed' &&
+              ( $t[-1] eq 'text/rfc822-headers' || $t[-1] eq 'message/rfc822' )
+            ) {
       $fname_ind = -1;
-      $structure_type = 'multipart/mixed with binary .eml';
-    } elsif ( @parts == 1 && $t[0] ne 'multipart/report' &&
-              ( $msginfo->is_auto ||
-                $rfc2822_from[0] =~ /^postmaster(?:\@|\z)/si ) ) {
+      $structure_type = 'multipart/mixed(yahoogroups)';
+    } elsif ( $msginfo->is_auto && $sender eq '' &&
+              @parts == 1 && $t[0] ne 'multipart/report' &&
+              $rfc2822_from[0] =~ /^(?:MAILER-DAEMON|postmaster)(?:\@|\z)/si
+            ) {
       # nonstructured, possibly a non-standard bounce (qmail, gmail.com, ...)
       $fname_ind = 0; $plaintext = 1;
       $structure_type = 'nonstructured(' . $msginfo->is_auto . ')';
-    } elsif ( $msginfo->is_auto && @parts == 2 &&
-              $t[0] eq 'multipart/mixed' && $t[1] eq 'text/plain' ) {
-      # nonstructured, possibly a broken bounce
-      $fname_ind = 1; $plaintext = 1;
-      $structure_type = $t[0] .' with '. $t[1] .'(' . $msginfo->is_auto .')';
-    } elsif ( $msginfo->is_auto && @parts == 3 &&
-              $t[0] eq 'multipart/alternative' &&
-              $t[1] eq 'text/plain' && $t[2] eq 'text/html' ) {
-      # text/plain+text/html, possibly a challenge CR message
-      $fname_ind = 1; $plaintext = 1;
-      $structure_type = $t[0] .' with '. $t[1] .'(' . $msginfo->is_auto .')';
     }
-    if (defined $fname_ind) {
+    if (defined $fname_ind && defined $parts[$fname_ind]) {
       # we probably have a header section from original mail, scan it
       $fname_ind = $#parts  if $fname_ind == -1;
       my($fname) = $parts[$fname_ind]->full_name;
@@ -11809,7 +11874,7 @@ sub inspect_a_bounce_message($) {
             if (!defined($ln)) {
               $eof = 1; $ln = "\n";
               $!==0  or                # returning EBADF at EOF is a perl bug
-                $!==EBADF ? do_log(0,"Error reading mail header section: $!")
+                $!==EBADF ? do_log(1,"Error reading mail header section: $!")
                           : die "Error reading mail header section: $!";
             }
           }
@@ -13897,14 +13962,27 @@ eval {
     die "PID file $pidf is not a regular file\n";
   } else { # determine PID of the currently running amavisd daemon, validate it
     my($mtime) = $stat_list[9]; my($ln); my($pidf_h) = IO::File->new;
+    my($lcnt) = 0;
     $pidf_h->open($pidf,'<') or die "Can't open PID file $pidf: $!";
-    for ($! = 0; defined($ln=$pidf_h->getline); $! = 0)
-      { chomp($ln); $amavisd_pid = $ln if $ln ne '' && !defined $amavisd_pid }
+    for ($! = 0; defined($ln=$pidf_h->getline); $! = 0) {
+      chomp($ln); $lcnt++; last if $lcnt > 100;
+      $amavisd_pid = $ln  if $lcnt == 1 && $ln =~ /^\d{1,10}\z/;
+    }
     defined $ln || $!==0  or die "Error reading from file $pidf: $!";
     $pidf_h->close or die "Error closing file $pidf: $!";
-    defined($amavisd_pid) or die "Missing process ID in file $pidf";
-    $amavisd_pid =~ /^\d{1,10}\z/ && $amavisd_pid > 1 && $amavisd_pid != $$
-      or die "Invalid process ID in file $pidf: [$amavisd_pid]";
+    if ($lcnt <= 1 && !defined $amavisd_pid) {
+      # treat empty or junk one-line pid file the same as nonexisting pid file
+      die "The amavisd daemon is apparently not running, empty PID file $pidf\n"
+        if $cmd =~ /^(?:reload|restart|stop)\z/;
+      # prevent Net::Server from seeing this crippled file
+      do_log(-1, "removing empty or crippled PID file %s", $pidf);
+      unlink($pidf) or die "Can't remove PID file $pidf: $!";
+      undef $amavisd_pid;
+    } else {
+      $lcnt <= 1            or die "More than one line in file $pidf";
+      defined $amavisd_pid  or die "Missing process ID in file $pidf";
+      $amavisd_pid > 1      or die "Invalid PID in file $pidf: [$amavisd_pid]";
+    }
     if (defined $amavisd_pid && defined $mtime) {  # got a PID from a file
       # Is pid file older than system uptime? If so, it should be disregarded,
       # it must not prevent starting up amavisd after unclean shutdown.
@@ -14048,7 +14126,7 @@ do_log(1, "user=%s, EUID: %s (%s);  group=%s, EGID: %s (%s)",
 do_log(0, "Perl version               %s", $]);
 # insist on a FQDN in $myhostname
 my($myhn) = c('myhostname');
-$myhn =~ /[^.]\.[a-zA-Z0-9]+\z/s || lc($myhn) eq 'localhost'
+$myhn =~ /[^.]\.[a-zA-Z0-9-]+\z/s || lc($myhn) eq 'localhost'
   or die <<"EOD";
   The value of variable \$myhostname is \"$myhn\", but should have been
   a fully qualified domain name; perhaps uname(3) did not provide such.
@@ -14127,7 +14205,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform $myversion $myhostname
                          $snmp_contact $snmp_location $nanny_details_level);
@@ -14383,7 +14461,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw($db_home $daemon_chroot_dir);
   import Amavis::Util qw(untaint ll do_log);
@@ -14464,7 +14542,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.2072';
+  $VERSION = '2.2092';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform);
   import Amavis::Util qw(ll do_log freeze thaw);
@@ -14612,7 +14690,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log);
   import Amavis::Conf qw($trim_trailing_space_in_lookup_result_fields);
@@ -14668,7 +14746,7 @@ sub lookup_sql_field($$$%) {
           do_log(5,'lookup_sql_field(%s), no field, "%s" result=undef',
                    $field,$addr);
         } else {       # treated as 'no match', issue a warning
-          do_log(1,'lookup_sql_field(%s) '.
+          do_log(4,'lookup_sql_field(%s) '.
                    '(WARN: no such field in the SQL table), "%s" result=undef',
                     $field,$addr);
         }
@@ -14711,7 +14789,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars c cr ca);
   import Amavis::Timing qw(section_time);
@@ -14858,7 +14936,8 @@ sub lookup_sql($$$%) {
     while ( defined($a_ref=$conn_h->fetchrow_arrayref($sel)) ) {
       my(@names) = @{$conn_h->sth($sel)->{NAME_lc}};
       $match = {}; @$match{@names} = @$a_ref;
-      if (!exists $match->{'local'} && $match->{'email'} eq '@.') {
+      if ($self->{clause_name} eq 'sel_policy' &&
+          !exists $match->{'local'} && $match->{'email'} eq '@.') {
         # UGLY HACK to let a catchall (@.) imply that field 'local' has
         # a value undef (NULL) when that field is not present in the
         # database. This overrides B1 fieldtype default by an explicit
@@ -14910,7 +14989,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION $ldap_sys_default);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars c cr ca);
   import Amavis::Util qw(ll do_log);
@@ -15021,7 +15100,7 @@ sub disconnect_from_ldap {
 
 sub do_search {
   my($self,$base,$scope,$filter) = @_;
-  my($result);
+  my($result,$error_name);
   $self->ldap or die "do_search: ldap not available";
   do_log(5,"lookup_ldap: searching base=\"%s\", scope=\"%s\", filter=\"%s\"",
            $base, $scope, $filter);
@@ -15031,15 +15110,26 @@ sub do_search {
                                     filter => $filter,
                                     deref  => $self->{deref},
                                     );
-    if ($result->code) { die $result->error_name, "\n"; }
+    if ($result->code) {
+      $error_name = $result->error_name;
+      if ($error_name eq 'LDAP_NO_SUCH_OBJECT') {
+        # probably alright, e.g. a foreign %d
+        do_log(4, 'do_search failed in "%s": %s', $base, $error_name);
+      } else {
+        die $error_name."\n";
+      }
+    }
     1;
   } or do {
     my($err) = $@ ne '' ? $@ : "errno=$!";  chomp $err;
     die $err  if $err =~ /^timed out\b/;  # resignal timeout
     if ($err !~ /^LDAP_/) {
       die "do_search: $err";
-    } else {  #  LDAP related error
-      do_log(0, "NOTICE: do_search: trying again: %s", $err);
+    } elsif ($error_name !~ /^LDAP_(?:BUSY|UNAVAILABLE|UNWILLING_TO_PERFORM|
+                             TIMEOUT|SERVER_DOWN|CONNECT_ERROR|OTHER)\z/x) {
+      die "do_search: failed: $error_name\n";
+    } else {  # LDAP related error, worth retrying
+      do_log(0, "NOTICE: do_search: trying again: %s", $error_name);
       $self->disconnect_from_ldap;
       $self->connect_to_ldap;
       $self->ldap or die "do_search: reconnect failed";
@@ -15075,7 +15165,7 @@ use re 'taint';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log);
   import Amavis::Conf qw($trim_trailing_space_in_lookup_result_fields);
@@ -15170,7 +15260,7 @@ BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION
               $ldap_sys_default @ldap_attrs @mv_ldap_attrs);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars c cr ca);
   import Amavis::Timing qw(section_time);
@@ -15303,8 +15393,9 @@ sub lookup_ldap($$$%) {
   $conn_h->begin_work;  # (re)connect if not connected
   eval {
     snmp_count('OpsLDAPSearch');
-    my($result) = $conn_h->do_search($base, $self->{scope}, $filter);
-    my(@entry) = $result->entries;
+    my(@entry);
+    my($search_obj) = $conn_h->do_search($base, $self->{scope}, $filter);
+    @entry = $search_obj->entries  if $search_obj && !$search_obj->code;
     my(%mv_ldap_attrs) = map { (lc($_), 1) } @mv_ldap_attrs;
     for my $entry (@entry) {
       my($match) = {};
@@ -15375,7 +15466,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars c cr ca);
   import Amavis::Util qw(ll do_log debug_oneshot snmp_counters_init
@@ -16047,7 +16138,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars c cr ca);
   import Amavis::Util qw(ll do_log untaint am_id new_am_id snmp_counters_init
@@ -17055,7 +17146,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform);
   import Amavis::Util qw(ll do_log min max);
@@ -17094,7 +17185,7 @@ sub new {
   $blocking = 0             if defined $arg{Blocking} && !$arg{Blocking};
   my($socketname) = $peeraddress;
   my($is_inet)  = $socketname=~m{^/} ? 0 : 1;    # simpleminded: unix vs. inet
-  my($is_inet4) = $is_inet && $socketname=~/^\d+.\d+.\d+.\d+\z/ ? 1 : 0;
+  my($is_inet4) = $is_inet && $socketname=~/^\d+\.\d+\.\d+\.\d+\z/ ? 1 : 0;
   my($sock);
   if ($is_inet && ($is_inet4 || !$have_inet6)) {  # inet socket (IPv4)
     do_log(3,"smtp creating socket by IO::Socket::INET to [%s]:%s",
@@ -17431,7 +17522,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&rundown_stale_sessions);
   import Amavis::Conf qw(:platform c cr ca $smtp_connection_cache_enable);
@@ -17708,7 +17799,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT = qw(&mail_via_smtp);
   import Amavis::Conf qw(:platform c cr ca $smtp_connection_cache_enable);
@@ -17774,23 +17865,21 @@ sub mail_via_smtp(@) {
 #
 sub enhance_smtp_response($$$$$) {
   my($smtp_resp,$am_id,$mta_id,$dflt_enhcode,$cmd_name) = @_;
-  local($1,$2,$3); my($resp_shortmsg,$resp_msg);
+  local($1,$2,$3); my($resp_msg);
   my($resp_code,$resp_enhcode) = ('451', '4.5.0');
   if (!defined($smtp_resp) || $smtp_resp eq '') {
-    $resp_shortmsg = 'No resp. to '.$cmd_name;
+    $smtp_resp = sprintf('No resp. to %s', $cmd_name);
   } elsif ($smtp_resp !~ /^[245]\d{2}/) {
-    $resp_shortmsg = 'Bad resp. to '.$cmd_name;
+    $smtp_resp = sprintf('Bad resp. to %s: %s', $cmd_name,$smtp_resp);
   } elsif ($smtp_resp =~ /^ (\d{3}) [ \t]+ ([245] \. \d{1,3} \. \d{1,3})?
                           \s* (.*) \z/xs) {
     ($resp_code, $resp_enhcode, $resp_msg) = ($1, $2, $3);
     my($c) = substr($resp_code,0,1);
     if ($resp_enhcode eq '' && $resp_code =~ /^[245]/)
       { $resp_enhcode = $dflt_enhcode; $resp_enhcode =~ s/^\d*/$c/ }
-    $resp_shortmsg = $c eq '2' ? 'Ok' : $c eq '4' ? 'TempFailed' : 'Failed';
   }
-  sprintf("%s %s %s, id=%s, from MTA(%s): %s",
-          $resp_code, $resp_enhcode, $resp_shortmsg,
-          $am_id, $mta_id, $smtp_resp);
+  sprintf("%s %s from MTA(%s): %s",
+          $resp_code, $resp_enhcode, $mta_id, $smtp_resp);
 }
 
 # Send mail using SMTP - single transaction
@@ -18342,7 +18431,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT = qw(&mail_via_pipe);
   import Amavis::Conf qw(:platform c cr ca);
@@ -18521,7 +18610,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT = qw(&mail_via_bsmtp);
   import Amavis::Conf qw(:platform $QUARANTINEDIR c cr ca);
@@ -18705,7 +18794,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&mail_to_local_mailbox);
   import Amavis::Conf qw(:platform $quarantine_subdir_levels c cr ca);
@@ -19022,7 +19111,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log);
 }
@@ -19175,7 +19264,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform c cr ca);
   import Amavis::Util qw(ll do_log);
@@ -19409,6 +19498,12 @@ sub connect_to_sql {
   $dbh->{'RaiseError'} = 1;
 # $dbh->{mysql_auto_reconnect} = 1;  # questionable benefit
 # $dbh->func(30000,'busy_timeout');  # milliseconds (SQLite)
+  eval {
+    $dbh->do("SET NAMES 'utf8'"); 1;
+  } or do {
+    my $eval_stat = $@ ne '' ? $@ : "errno=$!";  chomp $eval_stat;
+    do_log(2,"connect_to_sql: SET NAMES 'utf8' failed: %s", $eval_stat);
+  };
   section_time('sql-connect');
   $self;
 }
@@ -19435,7 +19530,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform c cr ca $QUARANTINEDIR
                          $timestamp_fmt_mysql $sql_allow_8bit_address);
@@ -19824,7 +19919,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Util qw(ll do_log untaint min max);
 }
@@ -20118,7 +20213,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT = qw(&mail_via_sql);
   import Amavis::Conf qw(:platform c cr ca $sql_quarantine_chunksize_max);
@@ -20155,7 +20250,7 @@ sub mail_via_sql {
   # $msg = IO::Wrap::wraphandle($msg);  # ensure we have an IO::Handle-like obj
     $msg->seek($msginfo->skip_bytes, 0) or die "Can't rewind mail file: $!";
   }
-  my($err) = $@; my($smtp_response);
+  my($err,$smtp_response);
   eval {
     my($sql_cl_r) = cr('sql_clause');
     $conn_h->begin_work;  # SQL transaction starts
@@ -20246,7 +20341,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars c cr ca);
   import Amavis::Util qw(ll untaint min max unique_list do_log add_entropy
@@ -20549,8 +20644,10 @@ sub ask_daemon_internal {
              10, $remaining_time);
     @$sockets >= 1 or die "no sockets specified!?";  # sanity
     $socketname = $sockets->[0];  # try the first one in the current list
+    $socketname =~ s/^([a-z][a-z0-9.+-]*)?://si;  # strip protocol name
     $is_inet = $socketname =~ m{^/} ? 0 : 1; # simpleminded: unix vs. inet sock
-    my($is_inet4) = $is_inet && $socketname=~/^\d+.\d+.\d+.\d+\z/ ? 1 : 0;
+    my($is_inet4) =
+      $is_inet && $socketname=~/^\d+\.\d+\.\d+\.\d+(?:\z|:)/ ? 1 : 0;
     my($eval_stat);
     eval {
       if (!$st_socket_created{$socketname}) {
@@ -21040,7 +21137,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform c cr ca);
   import Amavis::Util qw(ll do_log untaint unique_list);
@@ -21341,7 +21438,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars :sa c cr ca);
   import Amavis::Util qw(ll do_log sanitize_str min max prolong_timer);
@@ -21698,7 +21795,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars :sa c cr ca);
   import Amavis::Util qw(ll do_log sanitize_str);
@@ -21845,7 +21942,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   # let a 'require' understand that this module is already loaded:
   $INC{'Mail/SpamAssassin/Logger/Amavislog.pm'} = 'amavisd';
@@ -21881,7 +21978,7 @@ use warnings FATAL => 'utf8';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   import Amavis::Conf qw(:platform :confvars :sa $daemon_user c cr ca);
   import Amavis::Util qw(ll do_log sanitize_str prolong_timer add_entropy
@@ -21916,7 +22013,7 @@ sub getCommonSAModules {
     Net::DNS::RR::A Net::DNS::RR::AAAA Net::DNS::RR::PTR
     Net::DNS::RR::CNAME Net::DNS::RR::TXT Net::DNS::RR::SPF
     Net::CIDR::Lite
-    Sys::Hostname::Long DBD::mysql
+    Sys::Hostname::Long
     URI URI::Escape URI::Heuristic URI::QueryParam URI::Split URI::URL
     URI::WithBase URI::_foreign URI::_generic URI::_ldap URI::_login
     URI::_query URI::_segment URI::_server URI::_userpass URI::data URI::ftp
@@ -21929,7 +22026,7 @@ sub getCommonSAModules {
   # Mail::SpamAssassin::BayesStore::SQL
   # Mail::SpamAssassin::SQLBasedAddrList
   # ??? ArchiveIterator Reporter Getopt::Long Sys::Syslog lib
-  # Net::Ping
+  # Net::Ping DBD::mysql
   @modules;
 }
 
@@ -22227,6 +22324,7 @@ sub call_spamassassin($$$$) {
     my(%suppl_attrib) = (
       'return_path'  => $msginfo->sender_smtp,
       'recipients'   => [ qquote_rfc2821_local(@{$msginfo->recips}) ],
+      'originating'  => $msginfo->originating ? 1 : 0,
       'message_size' => $msginfo->msg_size,
       !$enable_dkim_verification ? ()
         : ('dkim_signatures' => $msginfo->dkim_signatures_all),
@@ -22432,7 +22530,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&init &decompose_part &determine_file_types);
   import Amavis::Util qw(untaint min max ll do_log snmp_count
@@ -22887,8 +22985,8 @@ sub do_ascii($$) {
 sub do_unzip($$;$$) {
   my($part, $tempdir, $archiver_dummy, $testing_for_sfx) = @_;
   ll(4) && do_log(4, "Unzipping %s", $part->base_name);
-  # avoid DoS vulnerability in < 2.017
-  Compress::Raw::Zlib->VERSION(2.017);  # required minimal version, or die
+  # avoid DoS vulnerability in < 2.017, CVE-2009-1391
+  # Compress::Raw::Zlib->VERSION(2.017);  # module not loaded
   snmp_count('OpsDecByArZipAttempt');
   my($zip) = Archive::Zip->new;
   my(@err_nm) = qw(AZ_OK AZ_STREAM_END AZ_ERROR AZ_FORMAT_ERROR AZ_IO_ERROR);
@@ -24083,7 +24181,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&dkim_key_postprocess &generate_authentication_results
                   &dkim_make_signatures &adjust_score_by_signer_reputation);
@@ -24643,7 +24741,7 @@ no warnings 'uninitialized';
 BEGIN {
   require Exporter;
   use vars qw(@ISA @EXPORT @EXPORT_OK %EXPORT_TAGS $VERSION);
-  $VERSION = '2.207';
+  $VERSION = '2.209';
   @ISA = qw(Exporter);
   @EXPORT_OK = qw(&show_or_test_dkim_public_keys &generate_dkim_private_key
                   &convert_dkim_keys_file);
@@ -24931,7 +25029,7 @@ UNCHECKED|BANNED (%F)|INFECTED (%V)]#
 , size: %z#
 [? [:partition_tag] ||, pt: [:partition_tag]]#
 [~[:remote_mta_smtp_response]|["^$"]||[", queued_as: "]]\
-[remote_mta_smtp_response|[~%x|["queued as ([0-9A-Z]+)$"]|["%1"]|["%0"]]|/]#
+[remote_mta_smtp_response|[~%x|["queued as ([0-9A-Za-z]+)$"]|["%1"]|["%0"]]|/]#
 #[? [:header_field|Subject]||, Subject: [:dquote|[:header_field|Subject|100]]]#
 #[? [:header_field|From]   ||, From: [:uquote|[:header_field|From|100]]\
 #[? [:dkim|author] || (dkim:AUTHOR)]]#
@@ -24991,7 +25089,7 @@ UNCHECKED|BANNED (%F)|INFECTED (%V)]#
 , %s -> [%D|,], Hits: %c#
 , tag=[:tag_level], tag2=[:tag2_level], kill=[:kill_level]#
 [~[:remote_mta_smtp_response]|["^$"]||\
-["queued as ([0-9A-Z]+)"]|[", queued_as: %1"]|[", fwd: %0"]]#
+["queued as ([0-9A-Za-z]+)"]|[", queued_as: %1"]|[", fwd: %0"]]#
 , %0/%1/%2/%k#
 ]
 [?%#O|#|Blocked #

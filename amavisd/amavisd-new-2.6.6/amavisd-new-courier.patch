@@ -1,5 +1,5 @@
---- amavisd.ori	2009-06-25 14:36:06.000000000 +0200
-+++ amavisd	2009-06-25 14:36:14.000000000 +0200
+--- amavisd.ori	2011-05-13 19:22:29.277598284 +0200
++++ amavisd	2011-05-13 19:22:38.762672629 +0200
 @@ -98,5 +98,5 @@
  #  Amavis::In::AMCL
  #  Amavis::In::SMTP
@@ -14,14 +14,14 @@
 +    IO::Handle IO::File IO::Select IO::Socket IO::Socket::UNIX IO::Socket::INET
      IO::Stringy Digest::MD5 Unix::Syslog File::Basename
      Compress::Zlib MIME::Base64 MIME::QuotedPrint MIME::Words
-@@ -9249,5 +9249,5 @@
+@@ -9281,5 +9281,5 @@
  ### but before binding to sockets
  sub post_configure_hook {
 -# umask(0007);  # affect protection of Unix sockets created by Net::Server
 +  umask(0007);  # affect protection of Unix sockets created by Net::Server
  }
  
-@@ -9260,4 +9260,34 @@
+@@ -9292,4 +9292,34 @@
  
  ### Net::Server hook
 +### This hook takes place immediately after the "->run()" method is called.
@@ -56,7 +56,7 @@
 +### Net::Server hook
  ### This hook occurs in the parent (master) process after chroot,
  ### after change of user, and change of group has occured.
-@@ -9312,4 +9342,15 @@
+@@ -9344,4 +9374,15 @@
      }
      $spamcontrol_obj->init_pre_fork  if $spamcontrol_obj;
 +    if ($courierfilter_shutdown) {
@@ -72,7 +72,7 @@
 +    }
      my(@modules_extra) = grep {!exists $modules_basic{$_}} keys %INC;
      if (@modules_extra) {
-@@ -9674,5 +9715,7 @@
+@@ -9706,5 +9747,7 @@
        $amcl_in_obj->process_policy_request($sock, $conn, \&check_mail, 0);
      } elsif ($suggested_protocol eq 'COURIER') {
 -      die "unavailable support for protocol: $suggested_protocol";
@@ -81,7 +81,7 @@
 +      $courier_in_obj->process_courier_request($sock, $conn, \&check_mail);
      } elsif ($suggested_protocol eq 'QMQPqq') {
        die "unavailable support for protocol: $suggested_protocol";
-@@ -9752,4 +9795,24 @@
+@@ -9784,4 +9827,24 @@
  }
  
 +### Net::Server hook
@@ -106,7 +106,7 @@
 +
  ### Child is about to be terminated
  ### user customizable Net::Server hook
-@@ -13614,4 +13677,9 @@
+@@ -13679,4 +13742,9 @@
  Amavis::Conf::supply_after_defaults();
  
 +# courierfilter shutdown needs can_read_hook, added in Net::Server 0.90
@@ -116,14 +116,14 @@
 +
  if (defined $desired_user && $daemon_user ne '') {
    local($1);
-@@ -14083,4 +14151,6 @@
+@@ -14161,4 +14229,6 @@
                                                            : $inet_socket_bind),
      listen => defined $listen_queue_size ? $listen_queue_size : undef,
 +    # need to set multi_port for can_read_hook
 +    multi_port => $courierfilter_shutdown ? 1 : undef,
      max_servers => $max_servers,  # number of pre-forked children
      !defined($min_servers) ? ()
-@@ -17041,5 +17111,424 @@
+@@ -17132,5 +17202,424 @@
  no warnings 'uninitialized';
  
 -BEGIN { die "Code not available for module Amavis::In::Courier" }
@@ -549,8 +549,8 @@
 +}
  
  1;
---- amavisd.conf-sample.ori	2009-06-25 14:35:59.000000000 +0200
-+++ amavisd.conf-sample	2009-06-25 14:36:14.000000000 +0200
+--- amavisd.conf-sample.ori	2011-05-13 19:22:25.123703387 +0200
++++ amavisd.conf-sample	2011-05-13 19:22:38.762672629 +0200
 @@ -148,4 +148,11 @@
  #$notify_method = $forward_method;
  

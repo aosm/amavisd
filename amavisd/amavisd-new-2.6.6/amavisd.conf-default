@@ -5,7 +5,7 @@ use strict;
 
 ## This software is licensed under the GNU General Public License (GPL).
 ## See comments at the start of file amavisd for the whole license text.
-##   Copyright (C) 2002-2009  Mark Martinec,  All Rights Reserved.
+##   Copyright (C) 2002-2011  Mark Martinec,  All Rights Reserved.
 
 ## See file amavisd.conf-sample for explanations and examples.
 
@@ -355,8 +355,8 @@ use strict;
 # @viruses_that_fake_sender_maps = (\$viruses_that_fake_sender_re, 1);
 # @virus_name_to_spam_score_maps =
 #   (new_RE(  # the order matters!
-#     [ qr'^Phishing\.'                                             => 0.1 ],
 #     [ qr'^Structured\.(SSN|CreditCardNumber)\b'                   => 0.1 ],
+#     [ qr'^(Heuristics\.)?Phishing\.'                              => 0.1 ],
 #     [ qr'^(Email|HTML)\.Phishing\.(?!.*Sanesecurity)'             => 0.1 ],
 #     [ qr'^Sanesecurity\.(Malware|Rogue|Trojan)\.' => undef ],# keep infected
 #     [ qr'^Sanesecurity\.'                                         => 0.1 ],
@@ -371,6 +371,9 @@ use strict;
 #     [ qr'^Safebrowsing\.'                                         => 0.1 ],
 #     [ qr'^winnow\.(phish|spam)\.'                                 => 0.1 ],
 #     [ qr'^INetMsg\.SpamDomain'                                    => 0.1 ],
+#     [ qr'^Doppelstern\.(Scam4|Phishing)'                          => 0.1 ],
+#     [ qr'^ScamNailer\.'                                           => 0.1 ],
+#     [ qr'^HTML/Bankish'                                     => 0.1 ],  # F-Prot
 #     [ qr'-SecuriteInfo\.com(\.|\z)'         => undef ],  # keep as infected
 #     [ qr'^MBL_NA\.UNOFFICIAL'               => 0.1 ],    # false positives
 #     [ qr'^MBL_'                             => undef ],  # keep as infected
@@ -546,10 +549,13 @@ $reputation_factor = 0.33;
 #   CC_BANNED,      sub { c('final_banned_destiny') },
 #   CC_SPAM,        sub { c('final_spam_destiny') },
 #   CC_BADH,        sub { c('final_bad_header_destiny') },
+#   CC_MTA.',2',    D_REJECT,
 #   CC_OVERSIZED,   D_BOUNCE,
 #   CC_CATCHALL,    D_PASS,
 # );
 # %smtp_reason_by_ccat = (
+#   # currently only used for blocked messages only, status 5xx
+#   # a multiline message will produce a valid multiline SMTP response
 #   CC_VIRUS,       "id=%n - INFECTED: %V",
 #   CC_BANNED,      "id=%n - BANNED: %F",
 #   CC_UNCHECKED,   "id=%n - UNCHECKED",

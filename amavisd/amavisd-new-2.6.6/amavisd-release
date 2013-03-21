@@ -32,7 +32,7 @@
 # using socket protection (unix socket) or @inet_acl (for inet socket).
 #
 # Author: Mark Martinec <mark.martinec@ijs.si>
-# Copyright (C) 2005-2008  Mark Martinec,  All Rights Reserved.
+# Copyright (C) 2005-2011  Mark Martinec,  All Rights Reserved.
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -74,7 +74,7 @@ use re 'taint';
 use IO::Socket;
 use Time::HiRes ();
 
-use vars qw($VERSION);  $VERSION = 1.500;
+use vars qw($VERSION);  $VERSION = 1.502;
 use vars qw($log_level $socketname);
 
   $log_level = 1;
@@ -156,17 +156,15 @@ sub release_file($$$@) {
     usage("Invalid quarantine ID: $mail_file");
   }
   my($quar_type) =
-    $fn_suffix eq '.gz' ? 'Z'
-    : $fn_path eq '' && $mail_id eq $mail_file ? 'Q' : 'F';
+    $fn_suffix eq '.gz' ? 'Z' : $fn_path ne '' ? 'F' : '';
   my($request_type) = $0 =~ /\breport\z/i  ? 'report'
                     : $0 =~ /\brequeue\z/i ? 'requeue' : 'release';
-  my(@query) = (
-    "request=$request_type",
-    "quar_type=$quar_type",
-    "mail_id=$mail_id",
-  );
+  my(@query);
+  push(@query, "request=$request_type");
+  push(@query, "mail_id=$mail_id");
+  push(@query, "quar_type=$quar_type")    if $quar_type ne '';
   push(@query, "secret_id=$secret_id")    if $secret_id ne '';
-  push(@query, "mail_file=$mail_file")    if $quar_type =~ /^[FZB]\z/;
+  push(@query, "mail_file=$mail_file");  # ignored with an SQL quarantine
   push(@query, "partition_tag=$part_tag") if $part_tag ne '';
   if (@alt_recips) {  # override original recipients if list is nonempty
     push(@query, map {"recipient=$_"} @alt_recips);

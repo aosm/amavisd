@@ -49,7 +49,7 @@ protocol:
   by exactly one non-encoded space. Spaces within a field must be encoded
   like any other restricted character (see below).
 
-The protocol may be spoken over a Unix STREAM socket, or over a
+The protocol may be spoken over a Unix STREAM socket, or over an
 inet tcp socket.
 
 The client request is a sequence of name=value attributes, each terminated
@@ -61,8 +61,8 @@ the server should not close the socket until it has been closed by the client.
 Only under special circumstances is the server allowed to close the session,
 e.g. in response to a timeout or fatal error condition.
 
-The order of attributes does not matter (except for the 'request'
-attribute which must appear the first in the client request).
+The order of attributes does not matter, except for the 'request'
+attribute which must appear first in the client request.
 The policy client as well as the policy server should ignore
 any attributes that it does not care about.
 
@@ -84,7 +84,7 @@ truncate unreasonably long lines to a sensible length, and issue a warning.
 
 Neither the client nor the server must make any assumptions that certain
 characters will not be used in the attribute name or values. E.g. a presence
-of encoded null or newline other special character in the attribute name
+of encoded null or newline or other special character in the attribute name
 or value must be safely and appropriately handled. If such a character
 does not comply with the expected syntax, the case should be handled
 to the best of client or server understanding and capability,
@@ -96,10 +96,10 @@ The following example Perl expression may be used for encoding/decoding:
     s/%([0-9a-fA-F]{2})/pack("C",hex($1))/eg
 
   to encode attribute name:
-    s/[^0-9a-zA-Z_-]/sprintf("%%%02x",ord($&))/eg;
+    s/([^0-9a-zA-Z_-])/sprintf("%%%02x",ord($1))/eg;
 
   to encode attribute values (each space-separated field individually):
-    s/[^\041-\044\046-\176]/sprintf("%%%02x",ord($&))/eg;
+    s/([^\041-\044\046-\176])/sprintf("%%%02x",ord($1))/eg;
 
 
 Attributes in the client request are:
@@ -116,7 +116,7 @@ sender=<foo@example.com>
 
 recipient=<user1@example.net>
   specifies the envelope recipient address. The attribute appears once
-  for each recipient address, the order or addresses must be preserved
+  for each recipient address, the order of addresses must be preserved
   and might be significant for some setups or functions.
   The attribute value syntax is specified in rfc2821 as 'Forward-path'.
 
@@ -124,8 +124,10 @@ tempdir=/var/amavis/amavis-milter-MWZmu9Di
   Specifies a temporary work directory to be used for mail unpacking,
   typically also containing the original mail file - see attribute
   'mail_file' below. This attribute should be present exactly once.
-  The server is allowed to use the specified directory to create
-  additional temporary files if it chooses so.
+  The server is allowed to use the specified directory to create additional
+  temporary files if it chooses so. As a security precaution, currently
+  amavisd restricts the temporary directory path, which must be a
+  subdirectory under $TEMPBASE or $MYHOME.
 
 tempdir_removed_by=client
   Specifies the client will be responsible for removing the temporary

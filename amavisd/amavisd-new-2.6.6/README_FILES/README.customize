@@ -362,7 +362,7 @@ The substitution text for the following simple macros is built-in:
   ccat_name display name of the c.cat, takes into account per-recip bypass_*
   remote_mta  MTA to which a message was forwarded
   remote_mta_smtp_response  MTA's SMTP response on accepting forwarded message
-  smtp_response  either a MTA's SMTP response for forwarded mail, or
+  smtp_response  either an MTA's SMTP response for forwarded mail, or
             internally generated SMTP response for mail that was not forwarded
   score_boost internally generated score points to be added to a SA score
 
@@ -580,5 +580,5 @@ body string should be quoted in [" ... "] ). Body string may contain tokens
 %0, %1, %2, ... %9 as formal arguments. These will be substituted with actual
 arguments (or empty strings for missing arguments) at the time of a call.
 In most respects these dynamically defined macros behave just like other
-pre-defined macros. One distinction is that they can only result in a scalar
-string, it can not produce an array.
+pre-defined macros. One distinction is that they can only produce a scalar
+string, they can not produce an array.
